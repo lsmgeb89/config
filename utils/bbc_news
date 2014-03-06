@@ -1,0 +1,141 @@
+#!/bin/bash
+#
+# Download BBC five minutes news bulletin.
+
+readonly E_DID_NOTHING=1
+# default time is 21:00
+readonly DEFAULT_IDX=21
+# switch timezone to London
+export TZ="Europe/London"
+
+pid=''
+search_date=''
+idx="${DEFAULT_IDX}"
+
+# get_iplayer aliase in the ~/.bash_aliases
+shopt -s expand_aliases
+source "${HOME}"/.bash_aliases
+
+err() {
+  echo "Error: $@" >&2
+}
+
+help() {
+  echo "Usage: "$(basename $0)" [OPTION]..."
+  echo "Download BBC five minutes news bulletin."
+  echo "-d  the date of News"
+  echo "-t  the time of News(the default time 21:00)"
+  echo "For Example: "$(basename $0)" -d 01/03/2014 -t 20"
+}
+
+parse_options() {
+  while getopts ':d:t:h' flag; do
+    case "${flag}" in
+      d)
+        if [[ "$(expr length "${OPTARG}")" -eq 10 ]]; then
+          search_date="${OPTARG}"
+        else
+          err "Invalid parameter ${OPTARG} of option ${flag}" && exit "${E_DID_NOTHING}"
+        fi
+        ;;
+      t)
+        if [[ "$(expr length "${OPTARG}")" -le 2 ]]; then
+          idx="$(printf "%.f\n" "${OPTARG}")"
+        else
+          err "Invalid parameter ${OPTARG} of option ${flag}" && exit "${E_DID_NOTHING}"
+        fi
+        ;;
+      h)
+        help && exit "${E_DID_NOTHING}"
+        ;;
+      *)
+        err "Unexpected option ${OPTARG}" && help && exit "${E_DID_NOTHING}"
+        ;;
+    esac
+  done
+
+  if [[ -z "${search_date}" ]]; then
+    local now_time="$(printf "%.f\n" "$(date +%H%M)")"
+    if [[ "${now_time}" -ge "${idx}06" ]]; then
+      search_date="$(date +%d/%m/%Y)"
+    else
+      search_date="$(date --date="-1 day" +%d/%m/%Y)"
+    fi
+  fi
+
+  echo "Querying BBC News programme @ London Time ${idx}:01:00 on ${search_date}..."
+}
+
+#######################################
+# Get Programme's pid
+# Globals:
+#   idx
+#   pid
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+get_pid() {
+  local found=0
+  local index=''
+  local bcast_time=''
+
+  # query programme
+  local res_str="$(get_iplayer "^BBC News$" --type=radio \
+                --listformat="<pid>: <name>-<episode>-<index>" \
+                | grep "${search_date}")"
+
+  if [[ -z "${res_str}" ]]; then
+    err "Query programme failed!"
+    exit "${E_DID_NOTHING}"
+  fi
+
+  # split result into array
+  OIFS="${IFS}"
+  IFS=$'\n'
+  local res_array=($res_str)
+  IFS="${OIFS}"
+
+  # reverse loop array and find
+  for ((i="${#res_array[@]}-1"; i >= 0; i--)); do
+    pid="$(expr "${res_array[$i]}" : '\(.*\):')"
+
+    index="$(expr "${res_array[$i]}" : '.*-\([0-9]\+$\)')"
+
+    bcast_time="$(get_iplayer --info ${index} | grep 'firstbcast:')"
+    bcast_time="$(expr "${bcast_time}" : '.*T0\?\([0-9]\+\):')"
+
+    echo -n "item ${res_array[$i]}: ${bcast_time} --- "
+    if [[ "${bcast_time}" -eq  "${idx}" ]]; then
+      found=1 && echo "match !!!" && break
+    else
+      echo "unmatch" && continue
+    fi
+  done
+
+  if [[ "${found}" -ne 1 ]]; then
+    err "The programme hasn't been uploaded to server yet!"
+    exit "${E_DID_NOTHING}"
+  fi
+}
+
+#######################################
+# Download the radio programme according to unique pid
+# Globals:
+#   pid
+# Arguments:
+#   None
+# Returns:
+#   None
+#######################################
+download() {
+  if [[ -z "${pid}" ]]; then
+    err "Empty pid!"
+    exit "${E_DID_NOTHING}"
+  else
+    get_iplayer --type=radio --pid "${pid}"
+  fi
+}
+
+parse_options "$@" && get_pid && download
