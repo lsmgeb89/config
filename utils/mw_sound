@@ -1,0 +1,215 @@
+#!/bin/bash
+#
+# Download a word's sound file from merriam-webster website.
+
+readonly E_DID_NOTHING=1
+readonly DOWN_PATH="${HOME}/m-w/"
+readonly COOKIE_FILE="${HOME}/.m-w-cookie.txt"
+readonly MW_LOGIN_URL="http://unabridged.merriam-webster.com/log-in.php"
+readonly FREE_QUERY_URL="http://www.merriam-webster.com/dictionary/"
+readonly PAID_QUERY_URL="http://unabridged.merriam-webster.com/collegiate/"
+readonly MEDIA_URL="http://media.merriam-webster.com"
+
+# the word to be queried
+word=''
+# sound id of the word
+sound_id=''
+# 0 is default, 1 is free and 2 is paid
+query_type=0
+
+err() {
+  echo "Error: $@" >&2
+}
+
+help() {
+  echo "Usage: "$(basename $0)" [OPTION] [WORD]..."
+  echo "Download a word's sound file from merriam-webster website."
+  echo "use -f to query through free service"
+  echo "use -m to query through paid service"
+  echo "You must specify a service to use, -f or -m"
+  echo "For Example: "$(basename $0)" -m doctor"
+}
+
+parse_options() {
+  local error=0
+
+  while getopts ':f:m:h' flag; do
+    case "${flag}" in
+      f)
+        if [[ "${query_type}" == 0 ]]; then
+          query_type=1
+          word="${OPTARG}"
+          echo "Query ${OPTARG} through free service"
+        else
+          error=1
+        fi
+        ;;
+      m)
+        if [[ "${query_type}" == 0 ]]; then
+          query_type=2
+          word="${OPTARG}"
+          echo "Query ${OPTARG} through paid service"
+        else
+          error=1
+        fi
+        ;;
+      h)
+        help && exit "${E_DID_NOTHING}"
+        ;;
+      *)
+        error=1
+        ;;
+    esac
+  done
+
+  if [[ "${OPTIND}" -eq 1 || "${OPTIND}-1" -lt "$#" || "${error}" -eq 1 ]]; then
+    err "Unexpected option, using -h to see help doc" && exit "${E_DID_NOTHING}"
+  fi
+}
+
+#######################################
+# Login in website to get unique cookie
+# Globals:
+# None
+# Arguments:
+# None
+# Returns:
+# None
+#######################################
+login() {
+  local user=''
+  local pass=''
+  local ret=''
+
+  read -p "User Name:" user
+  read -p "Password:" pass
+
+  if [[ -z "${user}" || -z "${pass}" ]]; then
+    echo "Empty User Name or Password!" && exit "${E_DID_NOTHING}"
+  fi
+
+  # send multipart form-data to login in
+  ret="$(curl \
+          -include \
+          --form "login_user=${user}" \
+          --form "login_pass=${pass}" \
+          --form "remember=yes" \
+          --form "ref=/" \
+          --cookie "cookies_enabled=yes;font_size_cookie=normal" \
+          --cookie-jar "${COOKIE_FILE}" \
+          "${MW_LOGIN_URL}" \
+          | grep 'Invalid username or password.')"
+
+  if [[ -n "${ret}" ]]; then
+    echo "Invalid username or password."
+    exit "${E_DID_NOTHING}"
+  fi
+}
+
+#######################################
+# Retrieve the web page of the word to get the sound_id
+# Globals:
+# sound_id
+# Arguments:
+# None
+# Returns:
+# None
+#######################################
+get_sound_id() {
+  local res_str=''
+  local res_array=''
+  local extracted_word=''
+
+  # According to the query type to retrieve web page
+  if [[ "${query_type}" -eq 2 ]]; then
+    res_str="$(curl --cookie "${COOKIE_FILE}" "${PAID_QUERY_URL}${word}" \
+                | grep -oP 'return au\(.*\);' \
+                | sed 's/.*\(return au\(.*\);\).*/\1/')"
+  elif [[ "${query_type}" -eq 1 ]]; then
+    res_str="$(curl "${FREE_QUERY_URL}${word}" \
+                | grep -oP 'return au\(.*\);' \
+                | sed 's/.*\(return au\(.*\);\).*/\1/')"
+  fi
+
+  #echo "${res_str}"
+
+  if [[ -z "${res_str}" ]]; then
+    echo "The word is misspelt or not in the Dictorary!"
+    exit "${E_DID_NOTHING}"
+  fi
+
+  OIFS="${IFS}"
+  IFS=$'\n'
+  res_array=($res_str)
+  IFS="${OIFS}"
+
+  for ((i=0; i < "${#res_array[@]}"; i++)); do
+    extracted_word="$(echo "${res_array[$i]}" | grep -oP "(?<=, ').*(?='\))")"
+    if [ "${extracted_word}" == "${word}" ]; then
+      # get sound id
+      sound_id="$(echo "${res_array[$i]}" | grep -oP "(?<=').*(?=',)")"
+      break
+    else
+      continue
+    fi
+  done
+}
+
+#######################################
+# Download sound file
+# Globals:
+# sound_id
+# Arguments:
+# None
+# Returns:
+# None
+#######################################
+get_sound() {
+  local tmp=''
+  local path=''
+  local sound_url=''
+  local extension='.wav'
+
+  if [[ -z "${sound_id}" ]]; then
+    echo "This word has not a matching sound file!"
+    exit "${E_DID_NOTHING}"
+  fi
+
+  # Copy logic from javascript function au (file, word, pr_text)
+  # from http://unabridged.merriam-webster.com/js/audio.js
+  if expr "${sound_id}" : "^span:" &> /dev/null; then
+    # Point to Spanish-English audio.
+    sound_id="$(echo "${sound_id}" | sed 's/^span://')"
+    path="/audio/prons/${sound_id:0:1}/"
+    extension='.mp3'
+  elif expr "${sound_id}" : "^gg" &> /dev/null; then
+    # Point to Geography audio.
+    path="/soundc11/gg/"
+  elif expr "${sound_id}" : "^bix" &> /dev/null; then
+    # Point to Biographical audio.
+    path="/soundc11/bix/"
+  elif expr "${sound_id}" : "^[0-9]" &> /dev/null; then
+    # Point to number audio.
+    path="/soundc11/number/"
+  else
+    # Point to default A-Z audio.
+    path="/soundc11/${sound_id:0:1}/"
+  fi
+
+  # Get the sound file URL.
+  sound_url="${MEDIA_URL}${path}${sound_id}${extension}"
+
+  [[ -e "${DOWN_PATH}" ]] || mkdir "${DOWN_PATH}"
+
+  echo "Downloading from ${sound_url} to ${DOWN_PATH}${word}${extension}"
+
+  curl --cookie "${COOKIE_FILE}" "${sound_url}" > "${DOWN_PATH}${word}${extension}"
+}
+
+main() {
+  parse_options "$@"
+  [[ "${query_type}" == 2 && ! -e "${COOKIE_FILE}" ]] && login
+  get_sound_id && get_sound
+}
+
+main "$@"
