@@ -1,0 +1,114 @@
+#!/bin/bash
+#
+# Config Ubuntu
+
+readonly SOFTWARE_PATH="${HOME}/softwares"
+readonly HIBERNATE_FILE="/etc/polkit-1/localauthority/50-local.d/com.ubuntu.enable-hibernate.pkla"
+
+# echo on
+set -x
+
+# stop on error
+set -e
+
+pushd "${HOME}"
+
+# third-party sources
+sudo add-apt-repository ppa:webupd8team/sublime-text-3
+sudo add-apt-repository ppa:webupd8team/java
+
+# spotify
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys BBEBDCB318AD50EC6865090613B00F1FD2C19886 0DF731E45CE24F27EEEB1450EFDC8610341D9410
+echo deb http://repository.spotify.com stable non-free | sudo tee /etc/apt/sources.list.d/spotify.list
+
+# vs code
+curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
+sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
+
+# install packages
+sudo apt update
+sudo apt install build-essential \
+                 chromium-browser \
+                 cmake \
+                 code \
+                 curl \
+                 dconf-tools \
+                 fcitx \
+                 fcitx-googlepinyin \
+                 ffmpeg \
+                 fonts-font-awesome \
+                 gdebi-core \
+                 git \
+                 java-common \
+                 nautilus-dropbox \
+                 oracle-java8-installer \
+                 r-base \
+                 r-base-dev \
+                 spotify-client \
+                 sublime-text-installer \
+                 texlive \
+                 texlive-fonts-extra \
+                 texlive-fonts-recommended \
+                 texlive-math-extra \
+                 texlive-xetex \
+                 texstudio \
+                 vim \
+                 xclip \
+                 xournal
+sudo apt upgrade
+
+# directory
+rm -rf Documents Music Pictures Videos
+mkdir -p "${SOFTWARE_PATH}"
+
+# git
+git config --global user.email lsmgeb89@gmail.com
+
+# jetbrains
+pushd "${SOFTWARE_PATH}"
+wget -O - "https://download.jetbrains.com/toolbox/jetbrains-toolbox-1.4.2492.tar.gz" | tar xzf -
+./jetbrains-toolbox-1.4.2492/jetbrains-toolbox &
+popd
+
+# enable hibernate
+# https://help.ubuntu.com/16.04/ubuntu-help/power-hibernate.html
+sudo touch "${HIBERNATE_FILE}"
+sudo bash -c "cat >> ${HIBERNATE_FILE}" << EOL
+[Re-enable hibernate by default in upower]
+Identity=unix-user:*
+Action=org.freedesktop.upower.hibernate
+ResultActive=yes
+
+[Re-enable hibernate by default in logind]
+Identity=unix-user:*
+Action=org.freedesktop.login1.hibernate;org.freedesktop.login1.handle-hibernate-key;org.freedesktop.login1;org.freedesktop.login1.hibernate-multiple-sessions;org.freedesktop.login1.hibernate-ignore-inhibit
+ResultActive=yes
+EOL
+
+# change power button to hibernate
+gsettings set org.gnome.settings-daemon.plugins.power button-power hibernate
+
+# never turn off screen automatically
+gsettings set org.gnome.desktop.session idle-delay 0
+
+# do nothing when closing lid
+gsettings set org.gnome.settings-daemon.plugins.power lid-close-ac-action nothing
+gsettings set org.gnome.settings-daemon.plugins.power lid-close-battery-action nothing
+
+# hibernate when low power
+gsettings set org.gnome.settings-daemon.plugins.power critical-battery-action hibernate
+
+popd
+
+# sublime
+cp config/sublime/Preferences.sublime-settings "${HOME}"/.config/sublime-text-3/Packages/User/
+
+# vs code
+cp config/vs_code/settings.json "${HOME}"/.config/Code/User/settings.json
+
+# use local time to avoid conflict with windows
+timedatectl set-local-rtc 1
+
+# set brightness to 80%
+xrandr --output eDP-1 --brightness 0.8
