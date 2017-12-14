@@ -3,5 +3,6 @@
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
   "files.trimTrailingWhitespace": true,
-  "editor.wordWrap": "off"
+  "editor.wordWrap": "off",
+  "workbench.colorTheme": "One Dark Pro"
 }
