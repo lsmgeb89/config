@@ -13,13 +13,21 @@ set -e
 
 pushd "${HOME}"
 
+# enable partner repository for flash player
+sudo sed -i "/^# deb.* .*partner/ s/^# //" sources.list
+
 # third-party sources
 sudo add-apt-repository ppa:webupd8team/sublime-text-3
 sudo add-apt-repository ppa:webupd8team/java
+sudo add-apt-repository ppa:obsproject/obs-studio
 
 # spotify
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys BBEBDCB318AD50EC6865090613B00F1FD2C19886 0DF731E45CE24F27EEEB1450EFDC8610341D9410
 echo deb http://repository.spotify.com stable non-free | sudo tee /etc/apt/sources.list.d/spotify.list
+
+# scala sbt
+echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823
 
 # vs code
 curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
@@ -28,12 +36,16 @@ sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode s
 
 # install packages
 sudo apt update
-sudo apt install build-essential \
+sudo apt install adobe-flashplugin \
+                 bleachbit \
+                 build-essential \
                  chromium-browser \
                  cmake \
                  code \
                  curl \
                  dconf-tools \
+                 exfat-fuse \
+                 exfat-utils \
                  fcitx \
                  fcitx-googlepinyin \
                  ffmpeg \
@@ -41,10 +53,15 @@ sudo apt install build-essential \
                  gdebi-core \
                  git \
                  java-common \
+                 maven \
                  nautilus-dropbox \
+                 obs-studio \
                  oracle-java8-installer \
                  r-base \
                  r-base-dev \
+                 sbt \
+                 snapd \
+                 snapd-xdg-open \
                  spotify-client \
                  sublime-text-installer \
                  texlive \
@@ -55,8 +72,12 @@ sudo apt install build-essential \
                  texstudio \
                  vim \
                  xclip \
-                 xournal
+                 xournal \
+                 unrar
 sudo apt upgrade
+
+# wechat
+sudo snap install electronic-wechat
 
 # directory
 rm -rf Documents Music Pictures Videos
@@ -116,5 +137,5 @@ cp config/vs_code/settings.json "${HOME}"/.config/Code/User/settings.json
 # use local time to avoid conflict with windows
 timedatectl set-local-rtc 1
 
-# set brightness to 80%
-xrandr --output eDP-1 --brightness 0.8
+# set brightness to 60%
+xrandr --output eDP-1 --brightness 0.6
