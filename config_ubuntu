@@ -108,7 +108,7 @@ ResultActive=yes
 EOL
 
 # change power button to hibernate
-gsettings set org.gnome.settings-daemon.plugins.power button-power hibernate
+gsettings set org.gnome.settings-daemon.plugins.power button-power suspend
 
 # never turn off screen automatically
 gsettings set org.gnome.desktop.session idle-delay 0
@@ -118,7 +118,7 @@ gsettings set org.gnome.settings-daemon.plugins.power lid-close-ac-action nothin
 gsettings set org.gnome.settings-daemon.plugins.power lid-close-battery-action nothing
 
 # hibernate when low power
-gsettings set org.gnome.settings-daemon.plugins.power critical-battery-action hibernate
+gsettings set org.gnome.settings-daemon.plugins.power critical-battery-action suspend
 
 popd
 
