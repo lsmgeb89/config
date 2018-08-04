@@ -11,13 +11,15 @@ set -x
 # stop on error
 set -e
 
+# sublime text 3
+./utils/install_sublime_text
+
 pushd "${HOME}"
 
 # enable partner repository for flash player
 sudo sed -i "/^# deb.* .*partner/ s/^# //" sources.list
 
 # third-party sources
-sudo add-apt-repository ppa:webupd8team/sublime-text-3
 sudo add-apt-repository ppa:webupd8team/java
 sudo add-apt-repository ppa:obsproject/obs-studio
 
@@ -63,7 +65,6 @@ sudo apt install adobe-flashplugin \
                  snapd \
                  snapd-xdg-open \
                  spotify-client \
-                 sublime-text-installer \
                  texlive \
                  texlive-fonts-extra \
                  texlive-fonts-recommended \
