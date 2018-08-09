@@ -23,7 +23,6 @@ set -e
 pushd "${HOME}"
 
 # third-party sources
-sudo add-apt-repository ppa:webupd8team/java
 sudo add-apt-repository ppa:obsproject/obs-studio
 
 # scala sbt
@@ -52,11 +51,8 @@ sudo apt install bleachbit \
                  fonts-font-awesome \
                  gdebi-core \
                  git \
-                 java-common \
-                 maven \
                  nautilus-dropbox \
                  obs-studio \
-                 oracle-java8-installer \
                  r-base \
                  r-base-dev \
                  sbt \
