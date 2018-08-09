@@ -17,10 +17,10 @@ set -e
 # spotify
 ./utils/install_spotify
 
-pushd "${HOME}"
+# flash player
+./utils/install_flash_player
 
-# enable partner repository for flash player
-sudo sed -i "/^# deb.* .*partner/ s/^# //" /etc/apt/sources.list
+pushd "${HOME}"
 
 # third-party sources
 sudo add-apt-repository ppa:webupd8team/java
@@ -37,8 +37,7 @@ sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode s
 
 # install packages
 sudo apt update
-sudo apt install adobe-flashplugin \
-                 bleachbit \
+sudo apt install bleachbit \
                  build-essential \
                  chromium-browser \
                  cmake \
