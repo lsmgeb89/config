@@ -30,7 +30,8 @@ pushd "${HOME}"
 
 # install packages
 sudo apt update
-sudo apt install bleachbit \
+sudo apt install -y \
+                 bleachbit \
                  build-essential \
                  chromium-browser \
                  cmake \
