@@ -17,7 +17,7 @@ set -e
 pushd "${HOME}"
 
 # enable partner repository for flash player
-sudo sed -i "/^# deb.* .*partner/ s/^# //" sources.list
+sudo sed -i "/^# deb.* .*partner/ s/^# //" /etc/apt/sources.list
 
 # third-party sources
 sudo add-apt-repository ppa:webupd8team/java
