@@ -46,8 +46,6 @@ sudo apt install -y \
                  gdebi-core \
                  git \
                  nautilus-dropbox \
-                 r-base \
-                 r-base-dev \
                  snapd \
                  snapd-xdg-open \
                  vim \
