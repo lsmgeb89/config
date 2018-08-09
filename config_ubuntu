@@ -43,7 +43,6 @@ sudo apt install -y \
                  fcitx \
                  fcitx-googlepinyin \
                  ffmpeg \
-                 fonts-font-awesome \
                  gdebi-core \
                  git \
                  nautilus-dropbox \
@@ -51,12 +50,6 @@ sudo apt install -y \
                  r-base-dev \
                  snapd \
                  snapd-xdg-open \
-                 texlive \
-                 texlive-fonts-extra \
-                 texlive-fonts-recommended \
-                 texlive-math-extra \
-                 texlive-xetex \
-                 texstudio \
                  vim \
                  xclip \
                  xournal \
