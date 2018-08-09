@@ -11,19 +11,19 @@ set -x
 set -e
 
 # sublime text 3
-./utils/install_sublime_text
+./utils/sublime_text_install
 
 # spotify
-./utils/install_spotify
+./utils/spotify_install
 
 # flash player
-./utils/install_flash_player
+./utils/flash_player_install
 
 # obs
-./utils/install_obs
+./utils/obs_install
 
 # vs code
-./utils/install_vs_code
+./utils/vs_code_install
 
 # jetbrains toolbox
 ./utils/jetbrains_toolbox_install
