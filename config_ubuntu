@@ -20,10 +20,10 @@ set -e
 # flash player
 ./utils/install_flash_player
 
-pushd "${HOME}"
+# obs
+./utils/install_obs
 
-# third-party sources
-sudo add-apt-repository ppa:obsproject/obs-studio
+pushd "${HOME}"
 
 # scala sbt
 echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
@@ -52,7 +52,6 @@ sudo apt install bleachbit \
                  gdebi-core \
                  git \
                  nautilus-dropbox \
-                 obs-studio \
                  r-base \
                  r-base-dev \
                  sbt \
