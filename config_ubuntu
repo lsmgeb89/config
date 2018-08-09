@@ -2,7 +2,6 @@
 #
 # Config Ubuntu
 
-readonly SOFTWARE_PATH="${HOME}/softwares"
 readonly HIBERNATE_FILE="/etc/polkit-1/localauthority/50-local.d/com.ubuntu.enable-hibernate.pkla"
 
 # echo on
@@ -25,8 +24,6 @@ set -e
 
 # vs code
 ./utils/install_vs_code
-
-pushd "${HOME}"
 
 # install packages
 sudo apt update
@@ -58,18 +55,8 @@ sudo apt upgrade
 # wechat
 sudo snap install electronic-wechat
 
-# directory
-rm -rf Documents Music Pictures Videos
-mkdir -p "${SOFTWARE_PATH}"
-
 # git
 git config --global user.email lsmgeb89@gmail.com
-
-# jetbrains
-pushd "${SOFTWARE_PATH}"
-wget -O - "https://download.jetbrains.com/toolbox/jetbrains-toolbox-1.4.2492.tar.gz" | tar xzf -
-./jetbrains-toolbox-1.4.2492/jetbrains-toolbox &
-popd
 
 # enable hibernate
 # https://help.ubuntu.com/16.04/ubuntu-help/power-hibernate.html
@@ -98,8 +85,6 @@ gsettings set org.gnome.settings-daemon.plugins.power lid-close-battery-action n
 
 # hibernate when low power
 gsettings set org.gnome.settings-daemon.plugins.power critical-battery-action suspend
-
-popd
 
 # use local time to avoid conflict with windows
 timedatectl set-local-rtc 1
