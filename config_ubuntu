@@ -51,7 +51,8 @@ sudo apt install -y \
                  vim \
                  xclip \
                  xournal \
-                 unrar
+                 unrar \
+                 vlc
 sudo apt upgrade
 
 # wechat
