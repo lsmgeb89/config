@@ -121,9 +121,6 @@ gsettings set org.gnome.settings-daemon.plugins.power critical-battery-action su
 
 popd
 
-# sublime
-cp config/sublime/Preferences.sublime-settings "${HOME}"/.config/sublime-text-3/Packages/User/
-
 # vs code
 code --install-extension ms-vscode.cpptools
 code --install-extension mitaki28.vscode-clang
