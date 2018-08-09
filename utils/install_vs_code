@@ -1,0 +1,23 @@
+#!/bin/bash
+#
+# Install VS Code
+# https://code.visualstudio.com/docs/setup/linux
+
+sudo apt install -y curl
+
+# Install vs code
+curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
+sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
+
+sudo apt update
+sudo apt install -y code
+
+# config vs code
+code --install-extension ms-vscode.cpptools
+code --install-extension mitaki28.vscode-clang
+code --install-extension formulahendry.code-runner
+code --install-extension ajshort.include-autocomplete
+code --install-extension hars.CppSnippets
+code --install-extension zhuangtongfa.material-theme
+cp ../config/vs_code/settings.json "${HOME}"/.config/Code/User/settings.json
