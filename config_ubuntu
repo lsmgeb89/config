@@ -25,6 +25,9 @@ set -e
 # vs code
 ./utils/install_vs_code
 
+# jetbrains toolbox
+./utils/jetbrains_toolbox_install
+
 # install packages
 sudo apt update
 sudo apt install -y \
