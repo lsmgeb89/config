@@ -53,7 +53,7 @@ sudo apt install -y \
                  xournal \
                  unrar \
                  vlc
-sudo apt upgrade
+sudo apt upgrade -y
 
 # wechat
 sudo snap install electronic-wechat
@@ -91,6 +91,3 @@ gsettings set org.gnome.settings-daemon.plugins.power critical-battery-action su
 
 # use local time to avoid conflict with windows
 timedatectl set-local-rtc 1
-
-# set brightness to 60%
-xrandr --output eDP-1 --brightness 0.6

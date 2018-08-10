@@ -19,4 +19,4 @@ sudo apt-get update
 sudo apt-get install -y sublime-text
 
 # Copy config file
-cp -R ../config/sublime/Preferences.sublime-settings "${HOME}"/.config/sublime-text-3/Packages/User/
+mkdir -p "${HOME}"/.config/sublime-text-3/Packages/User/ && cp -R ../config/sublime/Preferences.sublime-settings $_
