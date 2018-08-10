@@ -2,6 +2,8 @@
 #
 # Install Jetbrains Toolbox
 
+cd $(dirname $0)
+
 readonly INSTALL_SCRIPT="https://raw.githubusercontent.com/nagygergo/jetbrains-toolbox-install/master/jetbrains-toolbox.sh"
 
 sudo apt install -y curl

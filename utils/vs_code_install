@@ -3,6 +3,8 @@
 # Install VS Code
 # https://code.visualstudio.com/docs/setup/linux
 
+cd $(dirname $0)
+
 sudo apt install -y curl
 
 # Install vs code
