@@ -17,9 +17,9 @@ sudo apt install -y code
 
 # config vs code
 code --install-extension ms-vscode.cpptools
-code --install-extension mitaki28.vscode-clang
-code --install-extension formulahendry.code-runner
-code --install-extension ajshort.include-autocomplete
-code --install-extension hars.CppSnippets
 code --install-extension zhuangtongfa.material-theme
+# code --install-extension mitaki28.vscode-clang
+# code --install-extension formulahendry.code-runner
+# code --install-extension ajshort.include-autocomplete
+# code --install-extension hars.CppSnippets
 cp ../config/vs_code/settings.json "${HOME}"/.config/Code/User/settings.json
