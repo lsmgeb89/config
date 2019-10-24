@@ -3,6 +3,13 @@
 # Install Sublime Text 3
 # https://www.sublimetext.com/docs/3/linux_repositories.html#apt
 
+readonly PACKAGE_NAME="sublime-text"
+
+if dpkg -l "${PACKAGE_NAME}"; then
+  echo "The package ${PACKAGE_NAME} is already installed."
+  exit 0
+fi
+
 cd $(dirname $0)
 
 # Install the GPG key
@@ -16,7 +23,7 @@ echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sou
 
 # Update apt sources and install Sublime Text
 sudo apt-get update
-sudo apt-get install -y sublime-text
+sudo apt-get install -y "${PACKAGE_NAME}"
 
 # Copy config file
 mkdir -p "${HOME}"/.config/sublime-text-3/Packages/User/ && cp -R ../config/sublime/Preferences.sublime-settings $_

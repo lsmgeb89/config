@@ -4,9 +4,16 @@
 # https://askubuntu.com/questions/14629/how-do-i-enable-the-partner-repository
 # https://help.ubuntu.com/stable/ubuntu-help/net-install-flash.html.en
 
+readonly PACKAGE_NAME="adobe-flashplugin"
+
+if dpkg -l "${PACKAGE_NAME}"; then
+  echo "The package ${PACKAGE_NAME} is already installed."
+  exit 0
+fi
+
 # Enable partner repository for flash player
 sudo sed -i "/^# deb.* .*partner/ s/^# //" /etc/apt/sources.list
 
 # Install flash player
 sudo apt update
-sudo apt install -y adobe-flashplugin browser-plugin-freshplayer-pepperflash
+sudo apt install -y "${PACKAGE_NAME}" browser-plugin-freshplayer-pepperflash

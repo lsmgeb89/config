@@ -3,6 +3,13 @@
 # Install OBS Studio
 # https://obsproject.com/download
 
+readonly PACKAGE_NAME="obs-studio"
+
+if dpkg -l "${PACKAGE_NAME}"; then
+  echo "The package ${PACKAGE_NAME} is already installed."
+  exit 0
+fi
+
 sudo add-apt-repository -y ppa:obsproject/obs-studio
 sudo apt update
-sudo apt install -y obs-studio
+sudo apt install -y "${PACKAGE_NAME}"

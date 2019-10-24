@@ -2,6 +2,13 @@
 #
 # Install Jetbrains Toolbox
 
+readonly TOOLBOX_BIN="/usr/local/bin/jetbrains-toolbox"
+
+if [ -f "$TOOLBOX_BIN" ]; then
+  echo "Jetbrains Toolbox is already installed."
+  exit 0
+fi
+
 cd $(dirname $0)
 
 readonly INSTALL_SCRIPT="https://raw.githubusercontent.com/nagygergo/jetbrains-toolbox-install/master/jetbrains-toolbox.sh"
