@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# Enable hibernate
+# references:
+# https://help.ubuntu.com/community/ManualFullSystemEncryption/DetailedProcessPrepareInstall
+# https://www.dropbox.com/s/dmqnzqs1bbp6dm9/encryptinstallation?dl=1
+# https://gist.github.com/tjvr/f82004565139a5b13031af1ce5a50a02
+# https://outhereinthefield.wordpress.com/2019/05/21/enabling-hibernate-on-ubuntu-19-04-disco-dingo/
+
+readonly HIBERNATE_FILE="/etc/polkit-1/localauthority/50-local.d/com.ubuntu.enable-hibernate.pkla"
+
+# re-enable hibernate option in power menu
+# all the hibernate related actions are in the file /usr/share/polkit-1/actions/org.freedesktop.login1.policy
+# org.freedesktop.login1.inhibit-handle-hibernate-key -> Allow applications to inhibit system handling of the hibernate key
+# org.freedesktop.login1.hibernate -> Hibernate the system
+# org.freedesktop.login1.hibernate-multiple-sessions -> Hibernate the system while other users are logged in
+# org.freedesktop.login1.hibernate-ignore-inhibit -> Hibernate the system while an application asked to inhibit it
+sudo touch "${HIBERNATE_FILE}"
+sudo bash -c "cat >> ${HIBERNATE_FILE}" << EOL
+[Re-enable hibernate by default in upower]
+Identity=unix-user:*
+Action=org.freedesktop.upower.hibernate
+ResultActive=yes
+
+[Re-enable hibernate by default in logind]
+Identity=unix-user:*
+Action=org.freedesktop.login1.hibernate;org.freedesktop.login1.hibernate-multiple-sessions
+ResultActive=yes
+EOL
+
+# change power button to hibernate
+gsettings set org.gnome.settings-daemon.plugins.power button-power hibernate
+
+# hibernate when low power
+gsettings set org.gnome.settings-daemon.plugins.power critical-battery-action hibernate

@@ -2,8 +2,6 @@
 #
 # Config Ubuntu
 
-readonly HIBERNATE_FILE="/etc/polkit-1/localauthority/50-local.d/com.ubuntu.enable-hibernate.pkla"
-
 # echo on
 set -x
 
@@ -64,33 +62,12 @@ git config --global user.email lsmgeb89@gmail.com
 git config --global diff.tool meld
 git config --global difftool.prompt false
 
-# enable hibernate
-# https://help.ubuntu.com/16.04/ubuntu-help/power-hibernate.html
-sudo touch "${HIBERNATE_FILE}"
-sudo bash -c "cat >> ${HIBERNATE_FILE}" << EOL
-[Re-enable hibernate by default in upower]
-Identity=unix-user:*
-Action=org.freedesktop.upower.hibernate
-ResultActive=yes
-
-[Re-enable hibernate by default in logind]
-Identity=unix-user:*
-Action=org.freedesktop.login1.hibernate;org.freedesktop.login1.handle-hibernate-key;org.freedesktop.login1;org.freedesktop.login1.hibernate-multiple-sessions;org.freedesktop.login1.hibernate-ignore-inhibit
-ResultActive=yes
-EOL
-
-# change power button to hibernate
-gsettings set org.gnome.settings-daemon.plugins.power button-power suspend
-
 # never turn off screen automatically
 gsettings set org.gnome.desktop.session idle-delay 0
 
 # do nothing when closing lid
 gsettings set org.gnome.settings-daemon.plugins.power lid-close-ac-action nothing
 gsettings set org.gnome.settings-daemon.plugins.power lid-close-battery-action nothing
-
-# hibernate when low power
-gsettings set org.gnome.settings-daemon.plugins.power critical-battery-action suspend
 
 # use local time to avoid conflict with windows
 timedatectl set-local-rtc 1
