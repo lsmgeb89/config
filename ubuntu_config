@@ -35,7 +35,8 @@ sudo apt install -y \
                  cmake \
                  code \
                  curl \
-                 dconf-tools \
+                 dconf-cli \
+                 dconf-editor \
                  exfat-fuse \
                  exfat-utils \
                  fcitx \
