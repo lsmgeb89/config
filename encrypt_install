@@ -1,0 +1,120 @@
+#!/bin/bash
+#
+# Install Ubuntu 19.04+ with full disk encryption
+# reference:
+# https://help.ubuntu.com/community/Full_Disk_Encryption_Howto_2019
+
+# NVME storage devices naming scheme: /dev/nvme${CONTROLLER}n${NAMESPACE}p${PARTITION}
+# Partition scheme output by lsblk
+# NAME                 FSTYPE      LABEL   SIZE TYPE  MOUNTPOINT
+# nvme0n1                                  477G disk
+# ├─nvme0n1p1          vfat        ESP     512M part  /boot/efi
+# ├─nvme0n1p2          crypto_LUKS         768M part
+# │ └─luks_boot        ext4                766M crypt /boot
+# └─nvme0n1p3          crypto_LUKS       475.7G part
+#   └─luks_system      LVM2_member       475.7G crypt
+#     ├─vg_system-swap swap                  4G lvm   [SWAP]
+#     └─vg_system-root btrfs             471.7G lvm   /
+
+ANSWER=""
+readonly DEV="/dev/nvme0n1"
+readonly P1="${DEV}p1"
+readonly P2="${DEV}p2"
+readonly P3="${DEV}p3"
+readonly PW="$1"
+readonly P2_NAME="luks_boot"
+readonly P3_NAME="luks_system"
+readonly VG_SYS="vg_system"
+readonly KEY_SIZE="512"
+readonly KEY_PATH="/etc/luks"
+readonly KEY_FILE="${KEY_PATH}/boot_system.keyfile"
+readonly KEY_PATTERN="${KEY_PATH}/*.keyfile"
+
+echo "Please confirm LUKS password is ${PW}"
+read -rp "Type y to proceed, or anything else to cancel, and press Enter: " ANSWER
+
+if [[ "${ANSWER,}" != 'y' ]]; then
+  echo "Terminated."
+  exit 1
+fi
+
+echo "Run as root"
+sudo -i
+
+echo "Partition the storage device"
+sgdisk --zap-all "${DEV}"
+sgdisk --new=1:0:+512M "${DEV}"
+sgdisk --new=2:0:+768M "${DEV}"
+sgdisk --new=3:0:0 "${DEV}"
+
+# Typecode ef00 is EFI System and typecode 8301 is Linux reserved.
+sgdisk --typecode=1:ef00 \
+       --typecode=2:8301 \
+       --typecode=3:8301 "${DEV}"
+sgdisk --change-name=1:"EFI System Partition" \
+       --change-name=2:"Boot" \
+       --change-name=3:"System" "${DEV}"
+sgdisk --print "${DEV}"
+
+echo "LUKS encrypt and unlock partitions"
+echo -n "${PW}" | cryptsetup luksFormat --type=luks1 --hash=sha512 --key-size="${KEY_SIZE}" --key-file=- "${P2}"
+echo -n "${PW}" | cryptsetup luksFormat --type=luks1 --hash=sha512 --key-size="${KEY_SIZE}" --key-file=- "${P3}"
+
+echo -n "${PW}" | cryptsetup open --key-file=- "${P2}" "${P2_NAME}"
+echo -n "${PW}" | cryptsetup open --key-file=- "${P3}" "${P3_NAME}"
+ls /dev/mapper/
+
+echo "Create file systems (LVM VG and LV) on partitions"
+mkfs.vfat -F 32 -n ESP "${P1}"
+mkfs.ext4 -L boot "/dev/mapper/${P2_NAME}"
+
+pvcreate "/dev/mapper/${P3_NAME}"
+vgcreate "${VG_SYS}" "/dev/mapper/${P3_NAME}"
+
+# https://itsfoss.com/swap-size/
+# RAM Size | Swap Size (Without Hibernation) | Swap size (With Hibernation)
+# 16GB     | 4GB                             | 20GB
+lvcreate -L 4G -n swap "${VG_SYS}"
+lvcreate -l 100%FREE -n root "${VG_SYS}"
+
+# Choose "Minimal installation"
+# In the "Installation Type" options choose "Something Else"
+# Select the following partitions, press the "Change" button
+# Select /dev/mapper/luks_boot, choose "Use as" Ext4, "Format the partition" and "Mount point" /boot
+# Select /dev/mapper/vg_system-swap, choose "Use as" swap area
+# Select /dev/mapper/vg_system-root, choose "Use As" btrfs, "Format the partition" and "Mount point" /
+# Select the boot-loader device /dev/nvme0n1
+# After filling user name, open Terminal to configure GRUB
+# echo "GRUB_ENABLE_CRYPTODISK=y" >> /target/etc/default/grub
+echo "Launch ubiquity to install Ubuntu"
+ubiquity gtk_ui
+
+echo "Create a change-root environment"
+mount "/dev/${VG_SYS}/root" /target
+for fs in proc sys dev dev/pts etc/resolv.conf; do mount --rbind /$fs /target/@/$fs; done
+chroot /target/@
+
+# mount all filesystems mentioned in fstab
+mount -a
+
+echo "Config to automatically unlock encrypted volumes at boot-time"
+apt install -y cryptsetup-initramfs
+echo "KEYFILE_PATTERN=${KEY_PATTERN}" >> /etc/cryptsetup-initramfs/conf-hook
+echo "UMASK=0077" >> /etc/initramfs-tools/initramfs.conf
+
+echo "Create a key file and secure it"
+mkdir "${KEY_PATH}"
+dd if=/dev/urandom of="${KEY_FILE}" bs="${KEY_SIZE}" count=1
+chmod u=rx,go-rwx "${KEY_PATH}"
+chmod u=r,go-rwx "${KEY_FILE}"
+
+echo "Add the key file to the LUKS volumes"
+echo -n "${PW}" | cryptsetup luksAddKey --key-file=- "${P2}" "${KEY_FILE}"
+echo -n "${PW}" | cryptsetup luksAddKey --key-file=- "${P3}" "${KEY_FILE}"
+
+echo "Add the keys to the crypttab"
+echo "${P2_NAME} UUID=$(blkid -s UUID -o value ${P2}) ${KEY_FILE} luks,discard" >> /etc/crypttab
+echo "${P3_NAME} UUID=$(blkid -s UUID -o value ${P3}) ${KEY_FILE} luks,discard" >> /etc/crypttab
+
+echo "Update the initial ramfs"
+update-initramfs -uk all
