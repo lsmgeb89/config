@@ -30,16 +30,18 @@ readonly KEY_PATH="/etc/luks"
 readonly KEY_FILE="${KEY_PATH}/boot_system.keyfile"
 readonly KEY_PATTERN="${KEY_PATH}/*.keyfile"
 
-echo "Please confirm LUKS password is ${PW}"
+if [ "$(whoami)" != "root" ]; then
+  echo "This script needs to be run as root."
+  exit 1
+fi
+
+echo "Please confirm LUKS password is ${PW} and all disk data will be erased!"
 read -rp "Type y to proceed, or anything else to cancel, and press Enter: " ANSWER
 
 if [[ "${ANSWER,}" != 'y' ]]; then
   echo "Terminated."
   exit 1
 fi
-
-echo "Run as root"
-sudo -i
 
 echo "Partition the storage device"
 sgdisk --zap-all "${DEV}"
