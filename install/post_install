@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+# Post installation launched by encrypt_install
+# references:
+# https://help.ubuntu.com/community/Full_Disk_Encryption_Howto_2019
+# https://help.ubuntu.com/community/ManualFullSystemEncryption
+# https://www.dropbox.com/s/dmqnzqs1bbp6dm9/encryptinstallation?dl=1
+
+# echo on
+set -x
+
+# stop on error
+set -e
+
+readonly DEV="/dev/nvme0n1"
+readonly P2="${DEV}p2"
+readonly P3="${DEV}p3"
+readonly PW="$1"
+readonly P2_NAME="luks_boot"
+readonly P3_NAME="luks_system"
+readonly KEY_SIZE="512"
+readonly KEY_PATH="/etc/luks"
+readonly KEY_FILE="${KEY_PATH}/boot_system.keyfile"
+readonly KEY_PATTERN="${KEY_PATH}/*.keyfile"
+
+if [ "$(whoami)" != "root" ]; then
+  echo "This script needs to be run as root."
+  exit 1
+fi
+
+# mount all filesystems mentioned in fstab
+mount -a
+
+echo "Config to automatically unlock encrypted volumes at boot time"
+apt install -y cryptsetup-initramfs
+echo "KEYFILE_PATTERN=${KEY_PATTERN}" >> /etc/cryptsetup-initramfs/conf-hook
+echo "UMASK=0077" >> /etc/initramfs-tools/initramfs.conf
+
+echo "Create a key file and secure it"
+mkdir "${KEY_PATH}"
+dd if=/dev/urandom of="${KEY_FILE}" bs="${KEY_SIZE}" count=1
+chmod u=rx,go-rwx "${KEY_PATH}"
+chmod u=r,go-rwx "${KEY_FILE}"
+
+echo "Add the key file to the LUKS volumes"
+echo -n "${PW}" | cryptsetup luksAddKey --key-file=- "${P2}" "${KEY_FILE}"
+echo -n "${PW}" | cryptsetup luksAddKey --key-file=- "${P3}" "${KEY_FILE}"
+
+echo "Add the keys to the crypttab"
+echo "${P2_NAME} UUID=$(blkid -s UUID -o value ${P2}) ${KEY_FILE} luks,discard" >> /etc/crypttab
+echo "${P3_NAME} UUID=$(blkid -s UUID -o value ${P3}) ${KEY_FILE} luks,discard" >> /etc/crypttab
+
+echo "Update the initial ramfs"
+update-initramfs -uk all

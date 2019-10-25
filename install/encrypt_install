@@ -1,9 +1,13 @@
 #!/bin/bash
 #
 # Install Ubuntu 19.04+ with full disk encryption
-# reference:
+# references:
 # https://help.ubuntu.com/community/Full_Disk_Encryption_Howto_2019
+# https://help.ubuntu.com/community/ManualFullSystemEncryption
+# https://www.dropbox.com/s/dmqnzqs1bbp6dm9/encryptinstallation?dl=1
 
+# Environment: UEFI only with secure boot on
+# Since secure boot is on, hibernation could not be enabled on official Ubuntu kernel.
 # NVME storage devices naming scheme: /dev/nvme${CONTROLLER}n${NAMESPACE}p${PARTITION}
 # Partition scheme output by lsblk
 # NAME                 FSTYPE      LABEL   SIZE TYPE  MOUNTPOINT
@@ -16,6 +20,12 @@
 #     ├─vg_system-swap swap                  4G lvm   [SWAP]
 #     └─vg_system-root btrfs             471.7G lvm   /
 
+# echo on
+set -x
+
+# stop on error
+set -e
+
 ANSWER=""
 readonly DEV="/dev/nvme0n1"
 readonly P1="${DEV}p1"
@@ -26,9 +36,8 @@ readonly P2_NAME="luks_boot"
 readonly P3_NAME="luks_system"
 readonly VG_SYS="vg_system"
 readonly KEY_SIZE="512"
-readonly KEY_PATH="/etc/luks"
-readonly KEY_FILE="${KEY_PATH}/boot_system.keyfile"
-readonly KEY_PATTERN="${KEY_PATH}/*.keyfile"
+readonly POST_INSTALL_PATH="/target/@/usr/local/sbin"
+readonly POST_INSTALL_FILE="${POST_INSTALL_PATH}/post_install"
 
 if [ "$(whoami)" != "root" ]; then
   echo "This script needs to be run as root."
@@ -93,30 +102,14 @@ ubiquity gtk_ui
 
 echo "Create a change-root environment"
 mount "/dev/${VG_SYS}/root" /target
-for fs in proc sys dev dev/pts etc/resolv.conf; do mount --rbind /$fs /target/@/$fs; done
-chroot /target/@
+for fs in proc sys dev dev/pts etc/resolv.conf; do
+  mount --rbind "/${fs}" "/target/@/${fs}"
+done
+cp post_install "${POST_INSTALL_PATH}"
+chmod u+x "${POST_INSTALL_FILE}"
 
-# mount all filesystems mentioned in fstab
-mount -a
+# Execute post_install in chroot env
+chroot /target/@ post_install "${PW}"
+rm "${POST_INSTALL_FILE}"
 
-echo "Config to automatically unlock encrypted volumes at boot-time"
-apt install -y cryptsetup-initramfs
-echo "KEYFILE_PATTERN=${KEY_PATTERN}" >> /etc/cryptsetup-initramfs/conf-hook
-echo "UMASK=0077" >> /etc/initramfs-tools/initramfs.conf
-
-echo "Create a key file and secure it"
-mkdir "${KEY_PATH}"
-dd if=/dev/urandom of="${KEY_FILE}" bs="${KEY_SIZE}" count=1
-chmod u=rx,go-rwx "${KEY_PATH}"
-chmod u=r,go-rwx "${KEY_FILE}"
-
-echo "Add the key file to the LUKS volumes"
-echo -n "${PW}" | cryptsetup luksAddKey --key-file=- "${P2}" "${KEY_FILE}"
-echo -n "${PW}" | cryptsetup luksAddKey --key-file=- "${P3}" "${KEY_FILE}"
-
-echo "Add the keys to the crypttab"
-echo "${P2_NAME} UUID=$(blkid -s UUID -o value ${P2}) ${KEY_FILE} luks,discard" >> /etc/crypttab
-echo "${P3_NAME} UUID=$(blkid -s UUID -o value ${P3}) ${KEY_FILE} luks,discard" >> /etc/crypttab
-
-echo "Update the initial ramfs"
-update-initramfs -uk all
+echo "Installation succeeds!"
