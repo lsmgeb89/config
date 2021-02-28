@@ -55,9 +55,6 @@ sudo apt install -y \
                  vlc
 sudo apt upgrade -y
 
-# wechat
-sudo snap install electronic-wechat
-
 # git
 git config --global user.email lsmgeb89@gmail.com
 git config --global diff.tool meld
